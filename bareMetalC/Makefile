@@ -1,21 +1,22 @@
 include $(abs_top_srcdir)/Makefrag
 
 tests = \
-	mvin_mvout \
-	mvin_mvout_stride \
-	mvin_mvout_acc \
-	mvin_mvout_acc_stride \
-	matmul_os \
-	matmul_ws \
-	matmul \
-	raw_hazard \
-	aligned \
-	padded \
-	tiled_matmul_os \
-	tiled_matmul_ws \
-	tiled_matmul_cpu \
-	tiled_matmul_option \
-	template
+	bfloat_test #\
+	#mvin_mvout \
+	#mvin_mvout_stride \
+	#mvin_mvout_acc \
+	#mvin_mvout_acc_stride \
+	#matmul_os \
+	#matmul_ws \
+	#matmul \
+	#raw_hazard \
+	#aligned \
+	#padded \
+	#tiled_matmul_os \
+	#tiled_matmul_ws \
+	#tiled_matmul_cpu \
+	#tiled_matmul_option \
+	#template 
 
 tests_baremetal = $(tests:=-baremetal)
 ifdef BAREMETAL_ONLY
@@ -52,6 +53,8 @@ CFLAGS_BAREMETAL := \
 	-static \
 	-T $(BENCH_COMMON)/test.ld \
 	-DBAREMETAL=1 \
+	-L $(abs_top_srcdir)/softfloat/build/BareMetal-RISCV-GCC/ \
+	-l softfloat.a \
 
 all: $(tests_baremetal) $(tests_linux)
 

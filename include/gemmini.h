@@ -9,17 +9,39 @@
 #include <limits.h>
 #include <stdbool.h>
 
+#include "softfloat/source/include/softfloat.h"
 #include "include/gemmini_params.h"
 
 // #define GEMMINI_ASSERTIONS
+
+#ifdef ELEM_T_IS_BFLOAT
+float bf16_to_float (bfloat16_t b) {
+  float32_t f32 = bf16_to_f32(b);
+  return *((float*) &f32);
+}
+
+bfloat16_t float_to_bf16 (float f) {
+  float32_t f32 = *((float32_t *) &f);
+  return f32_to_bf16(f32);
+}
+#endif
 
 // Matmul utility functions
 void matmul(elem_t A[DIM][DIM], elem_t B[DIM][DIM], elem_t D[DIM][DIM], full_t C_full[DIM][DIM]) {
   for (size_t r = 0; r < DIM; r++)
     for (size_t c = 0; c < DIM; c++) {
-      C_full[r][c] = D[r][c];
+      #ifndef ELEM_T_IS_BFLOAT
+        C_full[r][c] = D[r][c];
+      #else
+        // Casting from bfloat to float requires conversion to float32_t and then a cast of raw bits to float
+        C_full[r][c] = bf16_to_float(D[r][c]);
+      #endif
       for (size_t k = 0; k < DIM; k++)
-        C_full[r][c] += A[r][k]*B[k][c];
+        #ifndef ELEM_T_IS_BFLOAT
+          C_full[r][c] += A[r][k]*B[k][c];
+        #else
+          C_full[r][c] += bf16_to_float(bf16_mul(A[r][k], B[k][c])); 
+        #endif
     }
 }
 
@@ -28,7 +50,12 @@ void matmul_short(elem_t A[DIM][DIM], elem_t B[DIM][DIM], elem_t D[DIM][DIM], el
     for (size_t c = 0; c < DIM; c++) {
       C[r][c] = D[r][c];
       for (size_t k = 0; k < DIM; k++)
-        C[r][c] += A[r][k]*B[k][c];
+        #ifndef ELEM_T_IS_BFLOAT
+          C[r][c] += A[r][k]*B[k][c];
+        #else
+          C[r][c] = bf16_mulAdd(A[r][k], B[k][c], C[r][c]);
+          // TODO: can split into mul, then add if mulAdd is not implemented
+        #endif
     }
 }
 
@@ -38,7 +65,11 @@ void matmul_full(elem_t A[DIM][DIM], elem_t B[DIM][DIM], full_t D[DIM][DIM], ful
     for (size_t c = 0; c < DIM; c++) {
       C_full[r][c] = D[r][c];
       for (size_t k = 0; k < DIM; k++)
-        C_full[r][c] += A[r][k]*B[k][c];
+        #ifndef ELEM_T_IS_BFLOAT
+          C_full[r][c] += A[r][k]*B[k][c];
+        #else
+          C_full[r][c] += bf16_to_float(bf16_mul(A[r][k], B[k][c])); 
+        #endif
     }
 }
 
@@ -49,7 +80,7 @@ void matadd(full_t sum[DIM][DIM], full_t m1[DIM][DIM], full_t m2[DIM][DIM]) {
 }
 
 // Rounding right shift equation: https://riscv.github.io/documents/riscv-v-spec/#_vector_fixed_point_rounding_mode_register_vxrm
-#ifndef ELEM_T_IS_FLOAT
+#if !(defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
 #define ROUNDING_RIGHT_SHIFT(x, shift) \
     ({(shift) > 0 ? (((x) >> (shift)) + \
         (((shift) == 0 ? 0 : (((x) >> ((shift)-1)) & 1)) & \
@@ -67,11 +98,13 @@ void matshift(full_t full[DIM][DIM], elem_t out[DIM][DIM], int shift) {
       full_t shifted = ROUNDING_RIGHT_SHIFT(full[r][c], shift);
 
       // Saturate and cast element
-#ifndef ELEM_T_IS_FLOAT
+#if !(defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
       full_t elem = shifted > elem_t_max ? elem_t_max : (shifted < elem_t_min ? elem_t_min : shifted);
       out[r][c] = elem;
-#else
+#elif defined(ELEM_T_IS_FLOAT)
       out[r][c] = shifted; // TODO should we also saturate when using floats?
+#else
+      out[r][c] = float_to_bf16(shifted);
 #endif
     }
 }
@@ -79,7 +112,11 @@ void matshift(full_t full[DIM][DIM], elem_t out[DIM][DIM], int shift) {
 void matrelu(elem_t in[DIM][DIM], elem_t out[DIM][DIM]) {
   for (size_t r = 0; r < DIM; r++)
     for (size_t c = 0; c < DIM; c++)
-      out[r][c] = in[r][c] > 0 ? in[r][c] : 0;
+      #ifndef ELEM_T_IS_BFLOAT
+        out[r][c] = in[r][c] > 0 ? in[r][c] : 0;
+      #else
+        out[r][c] = !bf16_le(in[r][c], i32_to_bf16(0)) ? in[r][c] : i32_to_bf16(0);
+      #endif
 }
 
 void matrelu6(elem_t in[DIM][DIM], elem_t out[DIM][DIM], int scale) {
@@ -87,8 +124,13 @@ void matrelu6(elem_t in[DIM][DIM], elem_t out[DIM][DIM], int scale) {
 
   for (size_t r = 0; r < DIM; r++)
     for (size_t c = 0; c < DIM; c++) {
-      elem_t positive = in[r][c] > 0 ? in[r][c] : 0;
-      out[r][c] = positive > max ? max : positive;
+      #ifndef ELEM_T_IS_BFLOAT
+        elem_t positive = in[r][c] > 0 ? in[r][c] : 0;
+        out[r][c] = positive > max ? max : positive;
+      #else
+        elem_t positive = !bf16_le(in[r][c], i32_to_bf16(0)) ? in[r][c] : i32_to_bf16(0);
+        out[r][c] = !bf16_le(positive, i32_to_bf16(max)) ? i32_to_bf16(max) : positive;
+      #endif
     }
 }
 
@@ -104,7 +146,7 @@ int rand() {
   return x >> 24;
 }
 
-#ifdef ELEM_T_IS_FLOAT
+#if (defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
 double rand_double() {
     double a = (double)(rand() % 128) / (double)(1 + (rand() % 64));
     double b = (double)(rand() % 128) / (double)(1 + (rand() % 64));
@@ -170,10 +212,18 @@ bool acc_t_isnan(acc_t x) {
 }
 #endif
 
+#ifdef ELEM_T_IS_BFLOAT
+bfloat16_t rand_bfloat() {
+  float c = (float) rand_double();
+  // Cast float to float32_t through raw bits, convert to bfloat16_t
+  return f32_to_bf16(*((float32_t*) &c));
+}
+#endif
+
 void printMatrix(elem_t m[DIM][DIM]) {
   for (size_t i = 0; i < DIM; ++i) {
     for (size_t j = 0; j < DIM; ++j)
-#ifndef ELEM_T_IS_FLOAT
+#if !(defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
       printf("%d ", m[i][j]);
 #else
       printf("%x ", elem_t_to_elem_t_bits(m[i][j]));
@@ -185,13 +235,15 @@ void printMatrix(elem_t m[DIM][DIM]) {
 int is_equal(elem_t x[DIM][DIM], elem_t y[DIM][DIM]) {
   for (size_t i = 0; i < DIM; ++i)
     for (size_t j = 0; j < DIM; ++j) {
-#ifndef ELEM_T_IS_FLOAT
+#if !(defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
       if (x[i][j] != y[i][j])
-#else
+#elif defined (ELEM_T_IS_FLOAT)
       bool isnanx = elem_t_isnan(x[i][j]);
       bool isnany = elem_t_isnan(y[i][j]);
 
       if (x[i][j] != y[i][j] && !(isnanx && isnany))
+#else
+      if (!bf16_eq(x[i][j], y[i][j]))
 #endif
           return 0;
     }
@@ -690,7 +742,11 @@ static void matmul_cpu(size_t dim_I, size_t dim_J, size_t dim_K,
       acc_t result = no_bias ? 0 : ((acc_t (*)[dim_J])D)[bias_row][j];
 
       for (size_t k = 0; k < dim_K; k++) {
-        result += A[i][k] * B[k][j];
+        #ifndef ELEM_T_IS_BFLOAT
+          result += A[i][k] * B[k][j];
+        #else
+          result += bf16_to_float(bf16_mul(A[i][k], B[k][j]));
+        #endif
       }
 
       // Shift while rounding to nearest integer (ties round to negative infinity)
@@ -707,7 +763,11 @@ static void matmul_cpu(size_t dim_I, size_t dim_J, size_t dim_K,
         result = result < 0 ? 0 : (result > max ? max : result);
       }
 
-      C[i][j] = (elem_t)result;
+      #ifndef ELEM_T_IS_BFLOAT
+        C[i][j] = (elem_t)result;
+      #else
+        C[i][j] = float_to_bf16(result);
+      #endif
     }
   }
 }
