@@ -45,9 +45,7 @@ CFLAGS := $(CFLAGS) \
 	-I$(abs_top_srcdir) \
 	-I$(BENCH_COMMON) \
 	-DID_STRING=$(ID_STRING) \
-	-L $(abs_top_srcdir)/softfloat/build/BareMetal-RISCV-GCC/ \
-	-l softfloat.a \
-
+        -L$(abs_top_srcdir)/softfloat/build/BareMetal-RISCV-GCC/ \
 
 CFLAGS_BAREMETAL := \
 	$(CFLAGS) \
@@ -56,6 +54,9 @@ CFLAGS_BAREMETAL := \
 	-static \
 	-T $(BENCH_COMMON)/test.ld \
 	-DBAREMETAL=1 \
+
+LFLAGS := $(LFLAGS) \
+        -lsoftfloat \
 
 all: $(tests_baremetal) $(tests_linux)
 
