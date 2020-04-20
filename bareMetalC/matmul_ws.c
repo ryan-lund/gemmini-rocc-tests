@@ -89,9 +89,15 @@ int main() {
       for (size_t n = 0; n < N; ++n) {
         for (size_t i = 0; i < DIM; ++i) {
           for (size_t j = 0; j < DIM; ++j) {
-            A[n][i][j] = (rand() % 64) - 32;
-            B[n][i][j] = (rand() % 64) - 32;
-            D[n][i][j] = (rand() % 64) - 32;
+            #ifndef ELEM_T_IS_BFLOAT
+              A[n][i][j] = (rand() % 64) - 32;
+              B[n][i][j] = (rand() % 64) - 32;
+              D[n][i][j] = (rand() % 64) - 32;
+            #else
+              A[n][i][j] = rand_bfloat();
+              B[n][i][j] = rand_bfloat();
+              D[n][i][j] = rand_bfloat();
+            #endif
           }
         }
       }
