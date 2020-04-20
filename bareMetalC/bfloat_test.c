@@ -19,6 +19,8 @@
 
 #define NUM_TESTS (10)
 
+int failed = 0;
+
 uint32_t float_to_int(float f) {
   return *((uint32_t*) &f);
 }
@@ -33,6 +35,7 @@ void check_result(float a, float b) {
     printf("Test passes \n");
   } else {
     printf("Test fails \n");
+    failed++;
   }
   printf("\n");
 }
@@ -52,6 +55,7 @@ int main() {
   gemmini_flush(0);
   
   for (int i = 0; i < NUM_TESTS; i++) {
+    printf("Starting test round %d \n", i);
     printf("Starting round trip test \n");
     float f = rand_double();
     bfloat16_t bf = float_to_bf16(f);
@@ -70,9 +74,28 @@ int main() {
     printf("Starting multiplication test \n");
     bf3 = bf16_mul(bf, bf2);
     f3 = bf16_to_float(bf3);
-    check_result(f3, f*f2);  
-  }
+    check_result(f3, f*f2);
+    
+    printf("Starting mulAdd test \n");
+    float f4 = rand_double();
+    bfloat16_t bf4 = float_to_bf16(f4);
+    float f5 = bf16_to_float(bf16_mulAdd(bf, bf2, bf4));
+    check_result(f5, f*f2+f4);
 
+    printf("Starting equality tests \n");
+    check_result(bf16_eq(bf, bf), f == f);
+    check_result(bf16_eq(bf, bf2), f == f2);
+    check_result(bf16_lt(bf, bf2), f < f2);
+    check_result(bf16_le(bf, bf), f <= f);
+    check_result(bf16_le(bf, bf2), f <= f2); 
+  }
+ 
+  if (failed > 0) {
+    printf("%d tests failed \n"); 
+  } else {
+    printf("All tests passed \n");
+  }
+ 
   exit(0);
 }
 
