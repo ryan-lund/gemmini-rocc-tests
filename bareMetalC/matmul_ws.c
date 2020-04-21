@@ -89,7 +89,7 @@ int main() {
       for (size_t n = 0; n < N; ++n) {
         for (size_t i = 0; i < DIM; ++i) {
           for (size_t j = 0; j < DIM; ++j) {
-            #if !(defined(ELEM_T_IS_BFLOAT) || defined(ELEM_T_IS_FLOAT)
+            #if !(defined(ELEM_T_IS_BFLOAT) || defined(ELEM_T_IS_FLOAT))
               A[n][i][j] = (rand() % 64) - 32;
               B[n][i][j] = (rand() % 64) - 32;
               D[n][i][j] = (rand() % 64) - 32;

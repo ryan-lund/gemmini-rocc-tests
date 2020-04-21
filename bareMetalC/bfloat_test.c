@@ -50,7 +50,7 @@ int main() {
 
 #ifndef ELEM_T_IS_BFLOAT
   exit(0);
-#endif
+#else
 
   gemmini_flush(0);
   
@@ -97,5 +97,6 @@ int main() {
   }
  
   exit(0);
+#endif
 }
 
