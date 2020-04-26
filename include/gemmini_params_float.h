@@ -28,9 +28,17 @@ elem_t elem_t_min = -3.4028235E38;
 typedef uint32_t elem_t_bits;
 typedef uint32_t acc_t_bits;
 
+#define HAS_MVIN_SCALE
+typedef float scale_t;
+typedef uint32_t scale_t_bits;
+
+#define HAS_MVIN_ACC_SCALE
+typedef float scale_acc_t;
+typedef uint32_t scale_acc_t_bits;
+
 #define row_align(blocks) __attribute__((aligned(blocks*DIM*sizeof(elem_t))))
 #define row_align_acc(blocks) __attribute__((aligned(blocks*DIM*sizeof(acc_t))))
 
-#define MVIN_SCALE_ONE 1
+#define MVIN_SCALE_ONE 1.0
 
 #endif // GEMMINI_PARAMS_H
