@@ -260,23 +260,40 @@ int is_equal(elem_t x[DIM][DIM], elem_t y[DIM][DIM]) {
 }
 
 // This is a GNU extension known as statment expressions
+#if !(defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
 #define MAT_IS_EQUAL(dim_i, dim_j, x, y) \
     ({int result = 1; \
       for (size_t i = 0; i < dim_i; i++) \
         for (size_t j = 0; j < dim_j; ++j) { \
-          #if !(defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
-            if (x[i][j] != y[i][j]) { \
-          #elif defined (ELEM_T_IS_FLOAT)
-            if (ABS(x[i][j] - y[i][j]) > ABS(EPSILON * y[i][j]))
-          #else
-            // (!(BF16_ABS(x[i][j] - y[i][j]) <= BF16_ABS(BF16_EPSILON*y[i][j])))
-            if (!bf16_le(BF16_ABS(bf16_sub(x[i][j],y[i][j])), BF16_ABS(bf16_mul(BF16_EPSILON, y[i][j]))))
-          #endif
-              result = 0; \
-              break; \
+          if (x[i][j] != y[i][j]) { \
+            result = 0; \
+            break; \
           } \
         } \
       result;})
+#elif defined (ELEM_T_IS_FLOAT)
+#define MAT_IS_EQUAL(dim_i, dim_j, x, y) \
+    ({int result = 1; \
+      for (size_t i = 0; i < dim_i; i++) \
+        for (size_t j = 0; j < dim_j; ++j) { \
+          if (ABS(x[i][j] - y[i][j]) > ABS(EPSILON * y[i][j])) { \
+            result = 0; \
+            break; \
+          } \
+        } \
+      result;})
+#else
+#define MAT_IS_EQUAL(dim_i, dim_j, x, y) \
+    ({int result = 1; \
+      for (size_t i = 0; i < dim_i; i++) \
+        for (size_t j = 0; j < dim_j; ++j) { \
+          if (!bf16_le(BF16_ABS(bf16_sub(x[i][j],y[i][j])), BF16_ABS(bf16_mul(BF16_EPSILON, y[i][j])))) { \
+            result = 0; \
+            break; \
+          } \
+        } \
+      result;})
+#endif
 
 uint64_t read_cycles() {
     uint64_t cycles;
