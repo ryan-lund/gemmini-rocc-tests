@@ -13,6 +13,9 @@
 #include "include/gemmini_params.h"
 
 // #define GEMMINI_ASSERTIONS
+#define EPSILON (0.01)
+
+#define ABS(x)  (((x) < 0) ? -(x) : (x))
 
 #ifdef ELEM_T_IS_BFLOAT
 float bf16_to_float (bfloat16_t b) {
@@ -24,7 +27,12 @@ bfloat16_t float_to_bf16 (float f) {
   float32_t f32 = *((float32_t *) &f);
   return f32_to_bf16(f32);
 }
+
+#define BF16_ABS(x)  (bf16_to_float(x) < 0 ?  (float_to_bf16(-1*bf16_to_float(x))) : (x))
+#define BF16_EPSILON  (float_to_bf16(EPSILON))
 #endif
+
+
 
 // Matmul utility functions
 void matmul(elem_t A[DIM][DIM], elem_t B[DIM][DIM], elem_t D[DIM][DIM], full_t C_full[DIM][DIM]) {
@@ -215,8 +223,7 @@ bool acc_t_isnan(acc_t x) {
 #ifdef ELEM_T_IS_BFLOAT
 bfloat16_t rand_bfloat() {
   float c = (float) rand_double();
-  // Cast float to float32_t through raw bits, convert to bfloat16_t
-  return f32_to_bf16(*((float32_t*) &c));
+  return float_to_bf16(c);
 }
 #endif
 
@@ -232,6 +239,7 @@ void printMatrix(elem_t m[DIM][DIM]) {
   }
 }
 
+// Assume that the golden (correct) matrix is passed in as y
 int is_equal(elem_t x[DIM][DIM], elem_t y[DIM][DIM]) {
   for (size_t i = 0; i < DIM; ++i)
     for (size_t j = 0; j < DIM; ++j) {
@@ -241,9 +249,10 @@ int is_equal(elem_t x[DIM][DIM], elem_t y[DIM][DIM]) {
       bool isnanx = elem_t_isnan(x[i][j]);
       bool isnany = elem_t_isnan(y[i][j]);
 
-      if (x[i][j] != y[i][j] && !(isnanx && isnany))
+      if (ABS(x[i][j] - y[i][j]) > ABS(EPSILON * y[i][j]) && !(isnanx && isnany))
 #else
-      if (!bf16_eq(x[i][j], y[i][j]))
+      // bf16_eq handles NaN checking
+      if (!bf16_eq(x[i][j], y[i][j]) && !(bf16_le(BF16_ABS(bf16_sub(x[i][j],y[i][j])), BF16_ABS(bf16_mul(BF16_EPSILON, y[i][j])))))
 #endif
           return 0;
     }
@@ -255,9 +264,16 @@ int is_equal(elem_t x[DIM][DIM], elem_t y[DIM][DIM]) {
     ({int result = 1; \
       for (size_t i = 0; i < dim_i; i++) \
         for (size_t j = 0; j < dim_j; ++j) { \
-          if (x[i][j] != y[i][j]) { \
-            result = 0; \
-            break; \
+          #if !(defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
+            if (x[i][j] != y[i][j]) { \
+          #elif defined (ELEM_T_IS_FLOAT)
+            if (ABS(x[i][j] - y[i][j]) > ABS(EPSILON * y[i][j]))
+          #else
+            // (!(BF16_ABS(x[i][j] - y[i][j]) <= BF16_ABS(BF16_EPSILON*y[i][j])))
+            if (!bf16_le(BF16_ABS(bf16_sub(x[i][j],y[i][j])), BF16_ABS(bf16_mul(BF16_EPSILON, y[i][j]))))
+          #endif
+              result = 0; \
+              break; \
           } \
         } \
       result;})
