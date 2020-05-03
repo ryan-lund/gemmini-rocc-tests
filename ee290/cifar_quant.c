@@ -49,6 +49,14 @@ int main (int argc, char * argv[]) {
         exit(1);
     }
 
+    #ifdef ELEM_T_IS_BFLOAT
+    weights_to_bfloat( 128, 64, conv_1_w, conv_1_w_float);
+    weights_to_bfloat(192, 64, conv_2_w, conv_2_w_float);
+    weights_to_bfloat(128, 448, fc_3_w, fc_3_w_float);
+    weights_to_bfloat(128, 128, fc_4_w, fc_4_w_float);
+    weights_to_bfloat(64, 128, fc_5_w, fc_5_w_float);
+    #endif
+
     uint64_t start, end;
     uint64_t im2col_cycles = 0, matmul_cycles = 0, pool_cycles = 0, conv_dw_cycles = 0, res_add_cycles = 0, other_cycles = 0;
 
@@ -66,7 +74,7 @@ int main (int argc, char * argv[]) {
 
     tiled_matmul_nn_auto(conv_1_params.I, conv_1_params.J, conv_1_params.K,
         conv_1_in, conv_1_w, NULL, conv_1_out,
-        RELU, conv_1_params.output_scale, true,
+        RELU, conv_1_params.output_scale, true, conv_1_params.output_scale,
         tiled_matmul_type, check, "conv_1");
 
     end = read_cycles();
@@ -95,7 +103,7 @@ int main (int argc, char * argv[]) {
 
     tiled_matmul_nn_auto(conv_2_params.I, conv_2_params.J, conv_2_params.K,
         conv_2_in, conv_2_w, NULL, conv_2_out,
-        RELU, conv_2_params.output_scale, true,
+        RELU, conv_2_params.output_scale, true, conv_2_params.output_scale,
         tiled_matmul_type, check, "conv_2");
 
     end = read_cycles();
@@ -135,7 +143,7 @@ int main (int argc, char * argv[]) {
 
     tiled_matmul_nn_auto(fc_3_params.I, fc_3_params.J, fc_3_params.K,
         fc_3_w, fc_3_in, NULL, fc_3_out,
-        RELU, fc_3_params.output_scale, false,
+        RELU, fc_3_params.output_scale, false, fc_3_params.output_scale,
         tiled_matmul_type, check, "fc_3");
 
     end = read_cycles();
@@ -146,7 +154,7 @@ int main (int argc, char * argv[]) {
 
     tiled_matmul_nn_auto(fc_4_params.I, fc_4_params.J, fc_4_params.K,
         fc_4_w, fc_3_out, NULL, fc_4_out,
-        RELU, fc_4_params.output_scale, false,
+        RELU, fc_4_params.output_scale, false, fc_4_params.output_scale,
         tiled_matmul_type, check, "fc_4");
 
     end = read_cycles();
@@ -157,7 +165,7 @@ int main (int argc, char * argv[]) {
 
     tiled_matmul_nn_auto(fc_5_params.I, fc_5_params.J, fc_5_params.K,
         fc_5_w, fc_4_out, NULL, fc_5_out,
-        NO_ACTIVATION, fc_5_params.output_scale, false,
+        NO_ACTIVATION, fc_5_params.output_scale, false, fc_5_params.output_scale,
         tiled_matmul_type, check, "fc_5");
 
     end = read_cycles();
@@ -172,7 +180,11 @@ int main (int argc, char * argv[]) {
         size_t max_idx = 0;
 
         for (int i = 1; i < fc_5_params.out_features; i++) {
+            #ifndef ELEM_T_IS_BFLOAT
             if (fc_5_out[i][batch] > max_prob) {
+            #else 
+            if (!bf16_le(fc_5_out[i][batch], max_prob)) {
+            #endif
                 max_prob = fc_5_out[i][batch];
                 max_idx = i;
             }

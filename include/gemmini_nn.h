@@ -157,7 +157,11 @@ static void conv_dw(size_t I, size_t J,
 
                         for (int kernel_col = 0; kernel_col < params->kernel_size; kernel_col++) {
                             if (in_row >= 0 && in_row < params->in_dim && in_col >= 0 && in_col < params->in_dim) {
+                                #ifndef ELEM_T_IS_BFLOAT
                                 result += input[batch][in_row][in_col][channel] * weight[channel][kernel_row][kernel_col];
+                                #else
+                                result += bf16_to_float(input[batch][in_row][in_col][channel]) * bf16_to_float(weight[channel][kernel_row][kernel_col]);
+                                #endif
                             }
 
                             in_col++;
@@ -179,7 +183,11 @@ static void conv_dw(size_t I, size_t J,
                     }
                     
                     size_t r = batch * params->out_dim * params->out_dim + out_row * params->out_dim + out_col;
+                    #ifndef ELEM_T_IS_BFLOAT
                     output[r][channel] = shifted;
+                    #else
+                    output[r][channel] = float_to_bf16(shifted);
+                    #endif
                     // output[batch][out_row][out_col][channel] = shifted;
                 }
             }
@@ -216,7 +224,11 @@ static void conv_dw_with_col2im(size_t prev_I, size_t prev_J, size_t I, size_t J
 
                                 size_t r = batch * params->in_dim * params->in_dim + in_row * params->in_dim + in_col;
 
+                                #ifndef ELEM_T_IS_BFLOAT
                                 result += input[r][channel] * weight[channel][kernel_row][kernel_col];
+                                #else
+                                result += bf16_to_float(input[r][channel]) * bf16_to_float(weight[channel][kernel_row][kernel_col]);
+                                #endif
                             }
 
                             in_col++;
@@ -238,8 +250,12 @@ static void conv_dw_with_col2im(size_t prev_I, size_t prev_J, size_t I, size_t J
                     }
                     
                     size_t r = batch * params->out_dim * params->out_dim + out_row * params->out_dim + out_col;
+                    #ifndef ELEM_T_IS_BFLOAT
                     output[r][channel] = shifted;
+                    #else
+                    output[r][channel] = float_to_bf16(shifted);
                     // output[batch][out_row][out_col][channel] = shifted;
+                    #endif
                 }
             }
         }
@@ -326,15 +342,22 @@ static void im2col_with_col2im(size_t prev_I, size_t prev_J,
 // Compute C = A + B with saturating add
 void vecadd(size_t len, const elem_t * A, const elem_t * B, elem_t * C, int A_shift) {
     for (size_t i = 0; i < len; i++) {
+        #ifndef ELEM_T_IS_BFLOAT
         acc_t result = ROUNDING_RIGHT_SHIFT(A[i], A_shift) + B[i];
+        #else
+        acc_t result = ROUNDING_RIGHT_SHIFT(bf16_to_float(A[i]), A_shift) + bf16_to_float(B[i]);
+        #endif
 
         if (result > elem_t_max) {
             result = elem_t_max;
         } else if (result < elem_t_min) {
             result = elem_t_min;
         }
-
+        #ifndef ELEM_T_IS_BFLOAT
         C[i] = result;
+        #else
+        C[i] = float_to_bf16(result);
+        #endif
     }
 }
 
@@ -351,15 +374,22 @@ void resadd1(const size_t batch_size, const size_t channels, const size_t im_dim
         for (size_t row = 0; row < params->out_dim_pooled; row++) {
             for (size_t col = 0; col < params->out_dim_pooled; col++) {
                 for (size_t channel = 0; channel < params->out_channels; channel++) {
+                    #ifndef ELEM_T_IS_BFLOAT
                     acc_t result = ROUNDING_RIGHT_SHIFT(A[batch][row][col][channel], params->res_scale) + B[batch][row][col][channel];
-
+                    #else
+                    acc_t result = ROUNDING_RIGHT_SHIFT(bf16_to_float(A[batch][row][col][channel]), params->res_scale) + bf16_to_float(B[batch][row][col][channel]);                    
+                    #endif
                     if (result > elem_t_max) {
                         result = elem_t_max;
                     } else if (result < minimum) {
                         result = minimum;
                     }
 
+                    #ifndef ELEM_T_IS_BFLOAT
                     C[batch][row][col][channel] = result;
+                    #else
+                    C[batch][row][col][channel] = float_to_bf16(result);
+                    #endif
                 }
             }
         }
@@ -382,7 +412,11 @@ void resadd2(const size_t I, const size_t J,
                 for (size_t channel = 0; channel < params->out_channels; channel++) {
                     size_t r = batch * params->out_dim_pooled * params->out_dim_pooled + row * params->out_dim_pooled + col;
 
+                    #ifndef ELEM_T_IS_BFLOAT
                     acc_t result = ROUNDING_RIGHT_SHIFT(A[r][channel], params->res_scale) + B[batch][row][col][channel];
+                    #else
+                    acc_t result = ROUNDING_RIGHT_SHIFT(bf16_to_float(A[r][channel]), params->res_scale) + bf16_to_float(B[batch][row][col][channel]);
+                    #endif
 
                     if (result > elem_t_max) {
                         result = elem_t_max;
@@ -390,7 +424,11 @@ void resadd2(const size_t I, const size_t J,
                         result = minimum;
                     }
 
+                    #ifndef ELEM_T_IS_BFLOAT
                     C[batch][row][col][channel] = result;
+                    #else
+                    C[batch][row][col][channel] = float_to_bf16(result);
+                    #endif
                 }
             }
         }
@@ -412,15 +450,22 @@ void resadd3(const size_t I, const size_t J,
                 for (size_t channel = 0; channel < params->out_channels; channel++) {
                     size_t r = batch * params->out_dim_pooled * params->out_dim_pooled + row * params->out_dim_pooled + col;
 
+                    #ifndef ELEM_T_IS_BFLOAT
                     acc_t result = ROUNDING_RIGHT_SHIFT(A[r][channel], params->res_scale) + B[r][channel];
-
+                    #else
+                    acc_t result = ROUNDING_RIGHT_SHIFT(bf16_to_float(A[r][channel]), params->res_scale) + bf16_to_float(B[r][channel]);
+                    #endif
                     if (result > elem_t_max) {
                         result = elem_t_max;
                     } else if (result < minimum) {
                         result = minimum;
                     }
 
+                    #ifndef ELEM_T_IS_BFLOAT
                     C[r][channel] = result;
+                    #else
+                    C[r][channel] = float_to_bf16(result);
+                    #endif
                 }
             }
         }
@@ -444,19 +489,33 @@ void pool(size_t batch_size, size_t channels, size_t in_dim, size_t out_dim,
                 for (int out_col = 0; out_col < out_dim; out_col++) {
                     int in_row = out_row * stride - padding;
 
+                    #ifndef ELEM_T_IS_BFLOAT
                     elem_t result = elem_t_min;
+                    #else
+                    elem_t result = float_to_bf16(elem_t_min);
+                    #endif
 
                     for (int kernel_row = 0; kernel_row < kernel_size; kernel_row++) {
                         int in_col = out_col * stride - padding;
 
                         for (int kernel_col = 0; kernel_col < kernel_size; kernel_col++) {
                             if (in_row >= 0 && in_row < in_dim && in_col >= 0 && in_col < in_dim) {
+                                #ifndef ELEM_T_IS_BFLOAT
                                 if (input[batch][in_row][in_col][channel] > result) {
+                                #else
+                                if (!bf16_le(input[batch][in_row][in_col][channel],result)) {
+                                #endif
                                     result = input[batch][in_row][in_col][channel];
                                 }
+                            #ifndef ELEM_T_IS_BFLOAT
                             } else if (0 > result) {
                                 result = 0;
                             }
+                            #else
+                            } else if (!bf16_le(float_to_bf16(0),result)) {
+                                result = float_to_bf16(0);
+                            }
+                            #endif
 
                             in_col++;
                         }
@@ -488,19 +547,34 @@ void pool_with_col2im(size_t I, size_t J,
                 for (int out_col = 0; out_col < out_dim; out_col++) {
                     int in_row = out_row * stride - padding;
 
+                    #ifndef ELEM_T_IS_BFLOAT
                     elem_t result = elem_t_min;
+                    #else
+                    elem_t result = float_to_bf16(elem_t_min);
+                    #endif
 
                     for (int kernel_row = 0; kernel_row < kernel_size; kernel_row++) {
                         int in_col = out_col * stride - padding;
 
                         for (int kernel_col = 0; kernel_col < kernel_size; kernel_col++) {
                             if (in_row >= 0 && in_row < in_dim && in_col >= 0 && in_col < in_dim) {
+                                #ifndef ELEM_T_IS_BFLOAT
                                 if (input[batch * in_dim * in_dim + in_row * in_dim + in_col][channel] > result) {
+                                #else
+                                if (!bf16_le(input[batch * in_dim * in_dim + in_row * in_dim + in_col][channel], result)) {
+                                #endif
                                     result = input[batch * in_dim * in_dim + in_row * in_dim + in_col][channel];
                                 }
+
+                            #ifndef ELEM_T_IS_BFLOAT
                             } else if (0 > result) {
                                 result = 0;
                             }
+                            #else
+                            } else if (!bf16_le(float_to_bf16(0),result)) {
+                                result = float_to_bf16(0);
+                            }
+                            #endif
 
                             in_col++;
                         }

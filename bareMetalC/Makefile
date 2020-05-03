@@ -45,7 +45,7 @@ CFLAGS := $(CFLAGS) \
 	-I$(abs_top_srcdir) \
 	-I$(BENCH_COMMON) \
 	-DID_STRING=$(ID_STRING) \
-        -L$(abs_top_srcdir)/softfloat/build/BareMetal-RISCV-GCC/ \
+    -L$(abs_top_srcdir)/softfloat/build/BareMetal-RISCV-GCC/ \
 
 CFLAGS_BAREMETAL := \
 	$(CFLAGS) \
