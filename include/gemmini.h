@@ -13,7 +13,8 @@
 #include "include/gemmini_params.h"
 
 // #define GEMMINI_ASSERTIONS
-#define EPSILON (0.01)
+#define EPSILON (0.00001)
+#define BF16_EPSILON (0.5)
 
 #define ABS(x)  (((x) < 0) ? -(x) : (x))
 
@@ -28,8 +29,6 @@ bfloat16_t float_to_bf16 (float f) {
   return f32_to_bf16(f32);
 }
 
-#define BF16_ABS(x)  (bf16_to_float(x) < 0 ?  (float_to_bf16(-1*bf16_to_float(x))) : (x))
-#define BF16_EPSILON  (float_to_bf16(EPSILON))
 #endif
 
 
@@ -252,7 +251,7 @@ int is_equal(elem_t x[DIM][DIM], elem_t y[DIM][DIM]) {
       if (ABS(x[i][j] - y[i][j]) > ABS(EPSILON * y[i][j]) && !(isnanx && isnany))
 #else
       // bf16_eq handles NaN checking
-      if (!bf16_eq(x[i][j], y[i][j]) && !(bf16_le(BF16_ABS(bf16_sub(x[i][j],y[i][j])), BF16_ABS(bf16_mul(BF16_EPSILON, y[i][j])))))
+      if (!bf16_eq(x[i][j], y[i][j]) && (ABS(bf16_to_float(x[i][j]) - bf16_to_float(y[i][j])) > ABS(BF16_EPSILON * bf16_to_float(y[i][j]))))
 #endif
           return 0;
     }
@@ -287,7 +286,7 @@ int is_equal(elem_t x[DIM][DIM], elem_t y[DIM][DIM]) {
     ({int result = 1; \
       for (size_t i = 0; i < dim_i; i++) \
         for (size_t j = 0; j < dim_j; ++j) { \
-          if (!bf16_le(BF16_ABS(bf16_sub(x[i][j],y[i][j])), BF16_ABS(bf16_mul(BF16_EPSILON, y[i][j])))) { \
+          if (ABS(bf16_to_float(x[i][j]) - bf16_to_float(y[i][j])) > ABS(BF16_EPSILON * bf16_to_float(y[i][j]))) { \
             result = 0; \
             break; \
           } \
