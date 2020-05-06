@@ -5,7 +5,7 @@ RISCVTOOLS      := @RISCVTOOLS@
 ROCC = examples
 
 .PHONY: all bareMetalC clean imagenet mlps
-all: bareMetalC ee290
+all: ee290
 
 vars = \
 	abs_top_srcdir=$(abs_top_srcdir) \
