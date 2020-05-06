@@ -31,6 +31,4 @@ typedef uint32_t acc_t_bits;
 #define row_align(blocks) __attribute__((aligned(blocks*DIM*sizeof(elem_t))))
 #define row_align_acc(blocks) __attribute__((aligned(blocks*DIM*sizeof(acc_t))))
 
-#define MVIN_SCALE_ONE 1
-
 #endif // GEMMINI_PARAMS_H

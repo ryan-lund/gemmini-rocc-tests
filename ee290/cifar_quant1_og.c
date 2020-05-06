@@ -9,7 +9,6 @@
 
 #include "cifar_quant_params.h"
 #include "cifar_quant_images.h"
-#include "cifar_quant_labels.h"
 
 int main (int argc, char * argv[]) {
 #ifndef BAREMETAL
