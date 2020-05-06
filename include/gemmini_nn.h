@@ -38,6 +38,16 @@ struct FcParams {
     int I, J, K;
 };
 
+#ifdef ELEM_T_IS_BFLOAT
+void weights_to_bfloat(int n, int m, bfloat16_t bfloat_weights[n][m], const float float_weights[n][m]) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < m; j++) {
+            bfloat_weights[i][j] = float_to_bf16(float_weights[i][j]);
+        }
+    }
+}
+#endif
+
 #define HIST_IMAGES(IMAGES) \
     for (int num = -128; num <= 127; num++) { \
         int count = 0; \
