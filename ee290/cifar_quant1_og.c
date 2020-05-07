@@ -7,7 +7,7 @@
 #include "include/gemmini.h"
 #include "include/gemmini_nn.h"
 
-#include "cifar_quant_params.h"
+#include "cifar_quant_params1_og.h"
 #include "cifar_quant_images.h"
 
 int main (int argc, char * argv[]) {
