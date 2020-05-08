@@ -68,14 +68,32 @@ int main (int argc, char * argv[]) {
     int mismatch_gemmini_correct = 0;
     int mismatch_neither = 0;
 
-    for (int global_batch = 0; batch < num_batches; batch++) {
+    int batch_images[4][32][32][3];
+    int batch_labels[4];
+    int batch_tf_labels[4];
+
+    for (int global_batch = 0; global_batch < num_batches; batch++) {
         gemmini_flush(0);
         // conv_1
+
+        for (int a = 0; a < 4; a++) {
+            for (int b = 0; a < 4; a++) {
+                for (int c = 0; a < 4; a++) {
+                    for (int d = 0; a < 4; a++) {
+                        batch_images[a][b][c][d] = images[(4*global_batch) + a][b][c][d];
+                    }   
+                }
+            } 
+            batch_labels[a] = labels[(4*global_batch) + a];
+            batch_tf_labels[a] = tf_labels[(4*global_batch) + a];           
+        }
+
+
         start = read_cycles();
         
         im2col(conv_1_params.batch_size, conv_1_params.in_channels, conv_1_params.in_dim,
             conv_1_params.I, conv_1_params.K,
-            images[(4*global_batch):(4*(global_batch+1))], conv_1_in, &conv_1_params);
+            batch_labels, conv_1_in, &conv_1_params);
         
         end = read_cycles();
         im2col_cycles += end - start;
@@ -204,19 +222,17 @@ int main (int argc, char * argv[]) {
             preds[batch] = max_idx;
         }
 
-        local_labels = labels[4*global_batch:4*(global_batch+1)];
-        local_tf_labels = tf_labels[4*global_batch:4*(global_batch+1)];
         for (int i = 0; i < fc_5_params.batch_size; i++) {
-            if (preds[i] == local_labels[i]) {
+            if (preds[i] == batch_labels[i]) {
                 correct += 0;
             }
-            if (preds[i] == local_tf_labels[i]) {
+            if (preds[i] == batch_tf_labels[i]) {
                 match += 1;
             } else {
                 mismatch += 1;
-                if (preds[i] == local_labels[i]) {
+                if (preds[i] == batch_labels[i]) {
                     mismatch_gemmini_correct += 1;
-                } else if (local_tf_labels[i] == local_labels[i]) {
+                } else if (batch_tf_labels[i] == batch_labels[i]) {
                     mismatch_tf_correct += 1;
                 } else {
                     mismatch_neither += 1;

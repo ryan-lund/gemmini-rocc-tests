@@ -54,7 +54,7 @@ static const elem_t fc_5_w[64][128] row_align(1) = {{0.0019495047,-0.008915565,0
 static elem_t fc_5_out[64][64] row_align(1);
 static const struct FcParams fc_5_params = {.batch_size=4, .in_features=84, .out_features=10, .bias=0, .output_scale=8, .I=64, .J=64, .K=128};
 
-static const int tf_labels[4] = {3,1,1,0};
+static const int tf_labels[8] = {3,1,1,0,6,6,3,6};
 
 #endif
   
