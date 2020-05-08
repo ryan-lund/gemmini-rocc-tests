@@ -39,11 +39,11 @@ struct FcParams {
 };
 
 #ifdef ELEM_T_IS_BFLOAT
-void images_to_bfloat(int n. bfloat16_t bfloat_images[n][32][32][3], const float float_images[n][32][32][3]) {
-    for int (a = 0; a < n; a++) {
-        for int (b = 0; b < 32; b++) {
-            for int (c = 0; c < 32; c++) {
-                for int (d = 0; d < 32; d++) {
+void images_to_bfloat(int n, bfloat16_t bfloat_images[n][32][32][3], const float float_images[n][32][32][3]) {
+    for (int a = 0; a < n; a++) {
+        for (int b = 0; b < 32; b++) {
+            for (int c = 0; c < 32; c++) {
+                for (int d = 0; d < 3; d++) {
                     bfloat_images[a][b][c][d] = float_to_bf16(float_images[a][b][c][d]);
                 }
             }

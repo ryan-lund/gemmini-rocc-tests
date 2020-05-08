@@ -238,6 +238,18 @@ void printMatrix(elem_t m[DIM][DIM]) {
   }
 }
 
+void printMatrixVar(int a, int b, elem_t m[a][b]) {
+  for (size_t i = 0; i < a; ++i) {
+    for (size_t j = 0; j < b; ++j)
+#if !(defined(ELEM_T_IS_FLOAT) || defined(ELEM_T_IS_BFLOAT))
+      printf("%d ", m[i][j]);
+#else
+      printf("%x ", elem_t_to_elem_t_bits(m[i][j]));
+#endif
+    printf("\n");
+  }
+}
+
 // Assume that the golden (correct) matrix is passed in as y
 int is_equal(elem_t x[DIM][DIM], elem_t y[DIM][DIM]) {
   for (size_t i = 0; i < DIM; ++i)

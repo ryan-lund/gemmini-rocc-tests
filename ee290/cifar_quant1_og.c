@@ -172,7 +172,7 @@ int main (int argc, char * argv[]) {
     end = read_cycles();
     matmul_cycles += end - start;
 
-    printMatrix(64, 64, fc_5_out);
+    printMatrixVar(64, 64, fc_5_out);
 
     // Find highest probs
     char * classes[] = {"plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"};
