@@ -68,18 +68,19 @@ int main (int argc, char * argv[]) {
     int mismatch_gemmini_correct = 0;
     int mismatch_neither = 0;
 
-    int batch_images[4][32][32][3];
+    elem_t batch_images[4][32][32][3];
     int batch_labels[4];
     int batch_tf_labels[4];
 
-    for (int global_batch = 0; global_batch < num_batches; batch++) {
+    for (int global_batch = 0; global_batch < num_batches; global_batch++) {
         gemmini_flush(0);
         // conv_1
+        printf("Batch %d/%d\n", global_batch+1, num_batches);
 
         for (int a = 0; a < 4; a++) {
-            for (int b = 0; a < 4; a++) {
-                for (int c = 0; a < 4; a++) {
-                    for (int d = 0; a < 4; a++) {
+            for (int b = 0; b < 32; b++) {
+                for (int c = 0; c < 32; c++) {
+                    for (int d = 0; d < 3; d++) {
                         batch_images[a][b][c][d] = images[(4*global_batch) + a][b][c][d];
                     }   
                 }
@@ -93,7 +94,7 @@ int main (int argc, char * argv[]) {
         
         im2col(conv_1_params.batch_size, conv_1_params.in_channels, conv_1_params.in_dim,
             conv_1_params.I, conv_1_params.K,
-            batch_labels, conv_1_in, &conv_1_params);
+            batch_images, conv_1_in, &conv_1_params);
         
         end = read_cycles();
         im2col_cycles += end - start;
@@ -217,14 +218,12 @@ int main (int argc, char * argv[]) {
                     max_idx = i;
                 }
             }
-            
-            printf("Prediction: %u (score: %x) (class: %s)\n", max_idx, elem_t_to_elem_t_bits(max_prob), classes[max_idx]);
             preds[batch] = max_idx;
         }
 
         for (int i = 0; i < fc_5_params.batch_size; i++) {
             if (preds[i] == batch_labels[i]) {
-                correct += 0;
+                correct += 1;
             }
             if (preds[i] == batch_tf_labels[i]) {
                 match += 1;

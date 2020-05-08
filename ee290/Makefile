@@ -1,7 +1,16 @@
 include $(abs_top_srcdir)/Makefrag
 
 tests = \
-	cifar_quant1_og
+	cifar_quant0_og \
+	cifar_quant0_rt \
+	cifar_quant1_og \
+	cifar_quant1_rt \
+	cifar_quant2_og \
+	cifar_quant2_rt \
+	cifar_quant3_og \
+	cifar_quant3_rt \
+	cifar_quant4_og \
+	cifar_quant4_rt \
 	#identity \
 	#identity_negative \
 	#double \
