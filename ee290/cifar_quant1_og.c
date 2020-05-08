@@ -50,7 +50,8 @@ int main (int argc, char * argv[]) {
     }
 
     #ifdef ELEM_T_IS_BFLOAT
-    weights_to_bfloat( 128, 64, conv_1_w, conv_1_w_float);
+    images_to_bfloat(4, images, images_float);
+    weights_to_bfloat(128, 64, conv_1_w, conv_1_w_float);
     weights_to_bfloat(192, 64, conv_2_w, conv_2_w_float);
     weights_to_bfloat(128, 448, fc_3_w, fc_3_w_float);
     weights_to_bfloat(128, 128, fc_4_w, fc_4_w_float);
@@ -170,6 +171,8 @@ int main (int argc, char * argv[]) {
 
     end = read_cycles();
     matmul_cycles += end - start;
+
+    printMatrix(64, 64, fc_5_out);
 
     // Find highest probs
     char * classes[] = {"plane", "car", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"};
