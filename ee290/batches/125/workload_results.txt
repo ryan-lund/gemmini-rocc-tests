@@ -1,0 +1,102 @@
+launching firesim workload run/command
+=========cifar_quant0_og=========
+=========cifar_quant1_og=========
+=========cifar_quant2_og=========
+=========cifar_quant3_og=========
+=========cifar_quant4_og=========
+=========cifar_quant0_rt=========
+=========cifar_quant1_rt=========
+=========cifar_quant2_rt=========
+=========cifar_quant3_rt=========
+=========cifar_quant4_rt=========
+*****************TEST RESULTS*************
+=========cifar_quant0_og=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 50 / 500 
+Matched: 39 / 500 
+Mismatched, TF Correct: 247 / 461 
+Mismatched, Gemmini Correct: 34 / 461 
+Mismatched, Neither Correct: 180 / 461 
+=========cifar_quant1_og=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 58 / 500 
+Matched: 65 / 500 
+Mismatched, TF Correct: 227 / 435 
+Mismatched, Gemmini Correct: 22 / 435 
+Mismatched, Neither Correct: 186 / 435 
+=========cifar_quant2_og=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 57 / 500 
+Matched: 44 / 500 
+Mismatched, TF Correct: 243 / 456 
+Mismatched, Gemmini Correct: 37 / 456 
+Mismatched, Neither Correct: 176 / 456 
+=========cifar_quant3_og=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 49 / 500 
+Matched: 63 / 500 
+Mismatched, TF Correct: 239 / 437 
+Mismatched, Gemmini Correct: 25 / 437 
+Mismatched, Neither Correct: 173 / 437 
+=========cifar_quant4_og=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 55 / 500 
+Matched: 62 / 500 
+Mismatched, TF Correct: 234 / 438 
+Mismatched, Gemmini Correct: 26 / 438 
+Mismatched, Neither Correct: 178 / 438 
+=========cifar_quant0_rt=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 49 / 500 
+Matched: 39 / 500 
+Mismatched, TF Correct: 247 / 461 
+Mismatched, Gemmini Correct: 33 / 461 
+Mismatched, Neither Correct: 181 / 461 
+=========cifar_quant1_rt=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 59 / 500 
+Matched: 64 / 500 
+Mismatched, TF Correct: 227 / 436 
+Mismatched, Gemmini Correct: 23 / 436 
+Mismatched, Neither Correct: 186 / 436 
+=========cifar_quant2_rt=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 57 / 500 
+Matched: 43 / 500 
+Mismatched, TF Correct: 243 / 457 
+Mismatched, Gemmini Correct: 37 / 457 
+Mismatched, Neither Correct: 177 / 457 
+=========cifar_quant3_rt=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 48 / 500 
+Matched: 63 / 500 
+Mismatched, TF Correct: 239 / 437 
+Mismatched, Gemmini Correct: 24 / 437 
+Mismatched, Neither Correct: 174 / 437 
+=========cifar_quant4_rt=========
+Starting bFloat Conversion
+Starting Classification
+Test Finished 
+Correct: 56 / 500 
+Matched: 61 / 500 
+Mismatched, TF Correct: 234 / 439 
+Mismatched, Gemmini Correct: 27 / 439 
+Mismatched, Neither Correct: 178 / 439 
